@@ -12,12 +12,15 @@
 #include<glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "CommonValues.h"
+
 #include "myWindow.h"
 #include "Mesh.h"
 #include "Shader.h"
 #include "Camera.h"
 #include "Texture.h"
-#include "Light.h"
+#include "DirectionalLight.h"
+#include "PointLight.h"
 #include "Material.h"
 
 const float toRadians = 3.14159265f / 180.0f;
@@ -29,11 +32,13 @@ Camera camera;
 
 Texture brickTexture;
 Texture dirtTexture;
+Texture plainTexture;
 
 Material shinyMaterial;
 Material dullMaterial;
 
-Light mainLight;
+DirectionalLight mainLight; //This will be the sun in our scene
+PointLight pointLights[MAX_POINT_LIGHTS];
 
 GLfloat deltaTime = 0.0f;
 GLfloat lastTime = 0.0f;
@@ -108,6 +113,18 @@ void CreateObjects() {
 		0.0f, 1.0f, 0.0f,			0.5f, 1.0f,		0.0f, 0.0f, 0.0f
 	}; //LAST ROW IS CENTER POINT
 
+	unsigned int floorIndices[] = {
+		0, 2, 1,
+		1, 2, 3
+	};
+
+	GLfloat floorVertices[] = {
+		-10.0f, 0.0f, -10.0f,		0.0f, 0.0f,			0.0f, -1.0f, 0.0f,
+		10.0f, 0.0f, -10.0f,		10.0f, 0.0f,		0.0f, -1.0f, 0.0f,
+		-10.0f, 0.0f, 10.0f,		0.0f, 10.0f,		0.0f, -1.0f, 0.0f,
+		10.0f, 0.0f, 10.0f,		10.0f, 10.0f,	0.0f, -1.0f, 0.0f
+	};
+
 	calcAverageNormals(indices, 12, vertices, 32, 8, 5);
 
 	Mesh* obj1 = new Mesh();
@@ -117,6 +134,10 @@ void CreateObjects() {
 	Mesh* obj2 = new Mesh();
 	obj2->CreateMesh(vertices, indices, 32, 12);
 	meshList.push_back(obj2);
+
+	Mesh* obj3 = new Mesh();
+	obj3->CreateMesh(floorVertices, floorIndices, 32, 6);
+	meshList.push_back(obj3);
 }
 
 void CreateShaders() {
@@ -138,15 +159,30 @@ int main() {
 	brickTexture.LoadTexture();
 	dirtTexture = Texture("Textures/dirt.png");
 	dirtTexture.LoadTexture();
+	plainTexture = Texture("Textures/plain.png");
+	plainTexture.LoadTexture();
 
-	shinyMaterial = Material(1.0f, 32);
+	shinyMaterial = Material(4.0f, 256);
 	dullMaterial = Material(0.3f, 4);
 
-	mainLight = Light(1.0f, 1.0f, 1.0f, 0.6f, 
-									2.0f, -1.0f, -2.0f, 1.0f); //Can lower the diffuse here to make specular look more visible
+	mainLight = DirectionalLight(1.0f, 1.0f, 1.0f, 
+															0.0f, 0.0f,
+																0.0f, 0.0f, -1.0f); //Can lower the diffuse(5th value) here to make specular look more visible
+	
+	unsigned int pointLightCount = 0;
+	
+	pointLights[0] = PointLight(0.0f, 0.0f, 1.0f,
+														0.1f, 1.0f,
+															-1.0f, 0.0f, 0.0f,
+																0.3f, 0.2f, 0.1f);
+	pointLightCount++;
+	pointLights[1] = PointLight(0.0f, 1.0f, 0.0f,
+														0.1f, 1.0f,
+															3.0f, 1.0f, 0.0f,
+																0.6f, 0.3f, 0.1f);
+	pointLightCount++;
 
 	GLuint uniformProjection = 0, uniformModel = 0, uniformView = 0, uniformEyePosition = 0,
-							uniformAmbientIntensity = 0, uniformAmbientColour = 0, uniformDirection = 0, uniformDiffuseIntensity = 0,
 								uniformSpecularIntensity = 0, uniformShininess = 0;
 
 	//45 degrees on y axis, aspect ratio(for proper rotation and stuff), view field(near view), how far we can see.
@@ -201,16 +237,12 @@ int main() {
 		uniformModel = shaderList[0].GetModelLocation();
 		uniformProjection = shaderList[0].GetProjectionLocation();
 		uniformView = shaderList[0].GetViewLocation();
-		uniformAmbientColour = shaderList[0].GetAmbientColourLocation();
-		uniformAmbientIntensity = shaderList[0].GetAmbientIntensityLocation();
-		uniformDirection = shaderList[0].GetDirectionLocation();
-		uniformDiffuseIntensity = shaderList[0].GetDiffuseIntensityLocation();
 		uniformEyePosition = shaderList[0].GetEyePositionLocation();
 		uniformSpecularIntensity = shaderList[0].GetSpecularIntensityLocation();
 		uniformShininess = shaderList[0].GetShininessLocation();
 
-		mainLight.UseLight(uniformAmbientIntensity, uniformAmbientColour, 
-													uniformDiffuseIntensity, uniformDirection);
+		shaderList[0].SetDirectionalLight(&mainLight);
+		shaderList[0].SetPointLights(pointLights, pointLightCount);
 
 		glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
 		glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(camera.calculateViewMatrix()));
@@ -221,23 +253,16 @@ int main() {
 		glm::mat4 model(1.0f);
 		//model = glm::translate(model, glm::vec3(triOffset, 0.0f, 0.0f));
 		model = glm::translate(model, glm::vec3(triOffset, 0.0f, -2.5f));
-		
 		//The thing that we rotate, rotation angle, direction. -- Right now we are rotating it 45 degrees using the line that we created in Z axis. 
 		//model = glm::rotate(model, curAngle * toRadians, glm::vec3(0.0f, 1.0f, 0.0f));
-		
 		//model = glm::scale(model, glm::vec3(curSize, curSize, 1.0f));
 		model = glm::scale(model, glm::vec3(0.4f, 0.4f, 1.0f));
-
 		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-
 		brickTexture.UseTexture();
-
 		//This can be made as usetexture(automatical).
 		shinyMaterial.UseMaterial(uniformSpecularIntensity, uniformShininess);
-
 		//Everytime shader updates, this will update our value in the shader.
 		//glUniform1f(uniformModel, triOffset);
-
 		meshList[0]->RenderMesh();
 
 		model = glm::mat4(1.0f);
@@ -247,6 +272,13 @@ int main() {
 		dirtTexture.UseTexture();
 		dullMaterial.UseMaterial(uniformSpecularIntensity, uniformShininess);
 		meshList[1]->RenderMesh();
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.0f, -2.0f, 0.0f));
+		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
+		plainTexture.UseTexture();
+		shinyMaterial.UseMaterial(uniformSpecularIntensity, uniformShininess);
+		meshList[2]->RenderMesh();
 
 		glUseProgram(0);
 
