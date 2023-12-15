@@ -9,6 +9,7 @@ in vec3 FragPos;
 out vec4 colour;
 
 const int MAX_POINT_LIGHTS = 3;
+const int MAX_SPOT_LIGHTS = 3;
 
 struct Light
 {
@@ -32,6 +33,13 @@ struct PointLight
 	float exponent;
 };
 
+struct SpotLight
+{
+	PointLight base;
+	vec3 direction;
+	float edge;
+};
+
 struct Material
 {
 	float specularIntensity;
@@ -39,9 +47,12 @@ struct Material
 };
 
 uniform int pointLightCount;
+uniform int spotLightCount;
+
 
 uniform DirectionalLight directionalLight;
 uniform PointLight pointLights[MAX_POINT_LIGHTS];
+uniform SpotLight spotLights[MAX_SPOT_LIGHTS];
 
 uniform sampler2D theTexture;
 uniform Material material;
@@ -87,24 +98,60 @@ vec4 CalcDirectionalLight()
 	return CalcLightByDirection(directionalLight.base, directionalLight.direction);
 }
 
+vec4 CalcPointLight(PointLight pLight) //This function is to calculate only 1 point light so that we can use it in our spot light as base.
+{
+	vec3 direction = FragPos - pLight.position;
+	float distance = length(direction);
+	direction = normalize(direction);
+
+	//After we calculate the direction above we will use it to call our function which we wrote. It will almost treat this as a directional light now.
+	vec4 colour = CalcLightByDirection(pLight.base, direction);
+	float attenuation = pLight.exponent * distance * distance + 
+						pLight.linear * distance + 
+						pLight.constant;
+	//This is our lighting calculation which is ax^2 + bx + c ---> It gives us light value depending on how far away we are from the light source.
+
+	return (colour / attenuation);
+}
+
+vec4 CalcSpotLight(SpotLight sLight)
+{
+	//The normalize function here gives us the direction of the light(where we are standing and where we are pointing our light)
+	vec3 rayDirection = normalize(FragPos - sLight.base.position);
+	float slFactor = dot(rayDirection, sLight.direction); //this dot product gives us the angle between rayDirection and spotlight direction. Which means if a point is in the cone of our flashlight 
+
+	if(slFactor > sLight.edge)
+	{
+		vec4 colour = CalcPointLight(sLight.base);
+
+		//The ratio between our scales gets multiplied by the value we gain with slFactor which gives us the correct value for the light effect
+		//We are changing our scale for the new scale so that we don't lose the effect.
+		return colour * (1.0f - (1.0f - slFactor) * (1.0f / (1.0f - sLight.edge))); //This calculation gives us the ultimate spotlight look where the edges of the spotlight fades and creates the effect.
+	}							//Initial value			Scale
+	else
+	{
+		return vec4(0, 0, 0, 0);
+	}
+}
+
 vec4 CalcPointLights()
 {
 	vec4 totalColour = vec4(0, 0, 0, 0);
 
 	for(int i = 0; i < pointLightCount; i++)
 	{
-		vec3 direction = FragPos - pointLights[i].position;
-		float distance = length(direction);
-		direction = normalize(direction);
+		totalColour += CalcPointLight(pointLights[i]); //We can use the new function that calculates only 1 point light to shorten the code here because its basically the same.
+	}
 
-		//After we calculate the direction above we will use it to call our function which we wrote. It will almost treat this as a directional light now.
-		vec4 colour = CalcLightByDirection(pointLights[i].base, direction);
-		float attenuation = pointLights[i].exponent * distance * distance + 
-							pointLights[i].linear * distance + 
-							pointLights[i].constant;
-		//This is our lighting calculation which is ax^2 + bx + c ---> It gives us light value depending on how far away we are from the light source.
+	return totalColour;
+}
 
-		totalColour += (colour / attenuation);
+vec4 CalcSpotLights()
+{
+	vec4 totalColour = vec4(0, 0, 0, 0);
+	for(int i = 0; i < spotLightCount; i++)
+	{
+		totalColour += CalcSpotLight(spotLights[i]);
 	}
 
 	return totalColour;
@@ -115,6 +162,7 @@ void main()
 	
 	vec4 finalColour = CalcDirectionalLight();
 	finalColour += CalcPointLights();
+	finalColour += CalcSpotLights();
 	
 	//colour = vColour;
 	//colour = texture(theTexture, TexCoord) * vColour;
