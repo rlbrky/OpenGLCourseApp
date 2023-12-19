@@ -158,11 +158,11 @@ int main() {
 	camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f, 5.0f, 1.0f);
 
 	brickTexture = Texture("Textures/brick.png");
-	brickTexture.LoadTexture();
+	brickTexture.LoadTextureA();
 	dirtTexture = Texture("Textures/dirt.png");
-	dirtTexture.LoadTexture();
+	dirtTexture.LoadTextureA();
 	plainTexture = Texture("Textures/plain.png");
-	plainTexture.LoadTexture();
+	plainTexture.LoadTextureA();
 
 	shinyMaterial = Material(4.0f, 256);
 	dullMaterial = Material(0.3f, 4);
@@ -206,6 +206,8 @@ int main() {
 
 	//45 degrees on y axis, aspect ratio(for proper rotation and stuff), view field(near view), how far we can see.
 	glm::mat4 projection = glm::perspective(45.0f, mainWindow.GetBufferWidth() /mainWindow.GetBufferHeight(), 0.1f, 100.0f);
+
+	
 
 	//Loop until window closed
 	while (!mainWindow.getShouldClose()) {
@@ -260,7 +262,7 @@ int main() {
 		uniformSpecularIntensity = shaderList[0].GetSpecularIntensityLocation();
 		uniformShininess = shaderList[0].GetShininessLocation();
 
-		glm::vec3 lowerLight = camera.getCameraPosition();
+		glm::vec3 lowerLight = camera.getCameraPosition(); //This lower light value is to make it so that we are holding a flashlight in our hand
 		lowerLight.y -= 0.3f;
 		spotLights[0].SetFlash(lowerLight , camera.getCameraDirection()); //Sets first person flashlight.
 

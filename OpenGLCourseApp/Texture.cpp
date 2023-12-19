@@ -18,11 +18,39 @@ Texture::Texture(std::string fileLoc) {
 	fileLocation = fileLoc;
 }
 
-void Texture::LoadTexture() {
+bool Texture::LoadTexture() 
+{
 	unsigned char* texData = stbi_load(fileLocation.c_str(), &width, &height, &bitDepth, 0);
 	if (!texData) {
 		printf("Failed to find: %s \n", fileLocation);
-		return;
+		return false;
+	}
+
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); //X axis of texture
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); //Y axis of texture
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); //When zoom out blend colors
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); //When zoom in blend colors
+
+	//Can set mipmaps manually by using the 2nd parameter in this func.
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texData);
+	glGenerateMipmap(GL_TEXTURE_2D); //Generate mipmaps automatically
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	stbi_image_free(texData);
+
+	return true;
+}
+
+bool Texture::LoadTextureA() 
+{
+	unsigned char* texData = stbi_load(fileLocation.c_str(), &width, &height, &bitDepth, 0);
+	if (!texData) {
+		printf("Failed to find: %s \n", fileLocation);
+		return false;
 	}
 
 	glGenTextures(1, &textureID);
@@ -40,6 +68,8 @@ void Texture::LoadTexture() {
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	stbi_image_free(texData);
+
+	return true;
 }
 
 void Texture::UseTexture() {

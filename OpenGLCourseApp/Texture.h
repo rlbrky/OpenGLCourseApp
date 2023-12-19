@@ -15,7 +15,8 @@ public:
 	Texture();
 	Texture(std::string fileLoc);
 
-	void LoadTexture();
+	bool LoadTexture(); //This will return if the texture is loaded.
+	bool LoadTextureA(); //This is for a texture that has alpha value. (Transparency)
 	void UseTexture();
 	void ClearTexture();
 

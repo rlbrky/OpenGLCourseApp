@@ -65,7 +65,7 @@ vec4 CalcLightByDirection(Light light, vec3 direction)
 	
 	//Normalize means convert into an unit vector
 	//We get the cos(angle) for the light. Which will determine where the light will come from.
-	float diffuseFactor = max(dot(normalize(Normal), normalize(direction)), 0.0f);
+	float diffuseFactor = max(dot(normalize(Normal), normalize(direction)), 0.0f); //We use normals positive but normally they are used negative so if you want it to be negative you need to reverse normals in main codes.(And in model importer as well.)
 	
 	//First two means how bright it will be and the last one gives the angle(how much of that light should appear).
 	vec4 diffuseColour = vec4(light.colour, 1.0f) * light.diffuseIntensity * diffuseFactor;
