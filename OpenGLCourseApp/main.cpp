@@ -24,6 +24,8 @@
 #include "SpotLight.h"
 #include "Material.h"
 
+#include "Model.h"
+
 const float toRadians = 3.14159265f / 180.0f;
 //COME BACK TO THIS PROJECT
 myWindow mainWindow;
@@ -37,6 +39,8 @@ Texture plainTexture;
 
 Material shinyMaterial;
 Material dullMaterial;
+
+Model madara;
 
 DirectionalLight mainLight; //This will be the sun in our scene
 PointLight pointLights[MAX_POINT_LIGHTS];
@@ -167,38 +171,42 @@ int main() {
 	shinyMaterial = Material(4.0f, 256);
 	dullMaterial = Material(0.3f, 4);
 
+
+	madara = Model();
+	madara.LoadModel("Models/Madara_Uchiha.obj");
+
 	mainLight = DirectionalLight(1.0f, 1.0f, 1.0f, 
-															0.0f, 0.0f,
-																0.0f, 0.0f, -1.0f); //Can lower the diffuse(5th value) here to make specular look more visible
+								0.3f, 0.6f,
+								0.0f, 0.0f, -1.0f); //Can lower the diffuse(5th value) here to make specular look more visible
 	
 	unsigned int pointLightCount = 0;
 	
 	pointLights[0] = PointLight(0.0f, 0.0f, 1.0f,
-														0.1f, 0.1f,
-															-1.0f, 0.0f, 0.0f,
-																0.3f, 0.2f, 0.1f);
+									0.1f, 0.1f,
+										-1.0f, 0.0f, 0.0f,
+											0.3f, 0.2f, 0.1f);
 	pointLightCount++;
 	pointLights[1] = PointLight(0.0f, 1.0f, 0.0f,
-														0.1f, 0.1f,
-															3.0f, 1.0f, 0.0f,
-																0.6f, 0.3f, 0.1f);
+								0.1f, 0.1f,
+									3.0f, 1.0f, 0.0f,
+										0.6f, 0.3f, 0.1f);
 	pointLightCount++;
 
 	unsigned int spotLightCount = 0;
 	spotLights[0] = SpotLight(1.0f, 1.0f, 1.0f,
-													0.1f, 2.0f,
-														-1.0f, 0.0f, 0.0f,
-															0.0f, -1.0f, 0.0f,
-																1.0f, 0.0f, 0.0f,
-																	20.0f);
+								0.1f, 2.0f,
+									-1.0f, 0.0f, 0.0f,
+										0.0f, -1.0f, 0.0f,
+											1.0f, 0.0f, 0.0f,
+												20.0f);
 	spotLightCount++;
 
 	spotLights[1] = SpotLight(1.0f, 1.0f, 1.0f,
-													0.1f, 1.0f,
-													-0.4f, 0.0f, 0.0f,
-													-100.0f, -1.0f, 0.0f,
-													1.0f, 0.0f, 0.0f,
-													20.0f);
+							0.1f, 1.0f,
+							-0.4f, 0.0f, 0.0f,
+							-100.0f, -1.0f, 0.0f,
+							1.0f, 0.0f, 0.0f,
+							20.0f);
 	spotLightCount++;
 
 	GLuint uniformProjection = 0, uniformModel = 0, uniformView = 0, uniformEyePosition = 0,
@@ -305,6 +313,21 @@ int main() {
 		plainTexture.UseTexture();
 		shinyMaterial.UseMaterial(uniformSpecularIntensity, uniformShininess);
 		meshList[2]->RenderMesh();
+
+		//model = glm::mat4(1.0f);
+		//model = glm::translate(model, glm::vec3(0.0f, -2.0f, 0.0f));
+		////model = glm::scale(model, glm::vec3(0.0f, 0.0f, 0.0f));
+		//glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
+		//shinyMaterial.UseMaterial(uniformSpecularIntensity, uniformShininess);
+		//tieFighter.RenderModel();
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-3.0f, -2.1f, -8.0f));
+		//model = glm::scale(model, glm::vec3(0.0f, 0.0f, 0.0f));
+		//model = glm::rotate(model, 90.0f * toRadians, glm::vec3(1.0, 0.0f, 0.0f));
+		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
+		shinyMaterial.UseMaterial(uniformSpecularIntensity, uniformShininess);
+		madara.RenderModel();
 
 		glUseProgram(0);
 

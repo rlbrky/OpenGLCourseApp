@@ -1,5 +1,19 @@
 #include "Model.h"
 
+void Model::RenderModel()
+{
+	for (size_t i = 0; i < meshList.size(); i++)
+	{
+		unsigned int materialIndex = meshToTex[i];
+
+		if (materialIndex < textureList.size() && textureList[materialIndex])
+		{
+			textureList[materialIndex]->UseTexture();
+		}
+
+		meshList[i]->RenderMesh();
+	}
+}
 
 void Model::LoadModel(const std::string& fileName)
 {
@@ -108,6 +122,27 @@ void Model::LoadMaterials(const aiScene* scene)
 		{
 			textureList[i] = new Texture("Textures/plain.png");
 			textureList[i]->LoadTextureA();
+		}
+	}
+}
+
+void Model::ClearModel()
+{
+	for (size_t i = 0; i < meshList.size(); i++)
+	{
+		if (meshList[i])
+		{
+			delete meshList[i];
+			meshList[i] = nullptr;
+		}
+	}
+
+	for (size_t i = 0; i < textureList.size(); i++)
+	{
+		if (textureList[i])
+		{
+			delete textureList[i];
+			textureList[i] = nullptr;
 		}
 	}
 }
