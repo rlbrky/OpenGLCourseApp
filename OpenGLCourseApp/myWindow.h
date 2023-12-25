@@ -30,6 +30,7 @@ private:
 	static void handleKeys(GLFWwindow* window, int key, int code, int action, int mode);
 	static void handleMouse(GLFWwindow* window, double xPos, double yPos);
 
+
 public:
 	myWindow();
 	myWindow(GLint windowWidth, GLint windowHeight);
@@ -48,6 +49,8 @@ public:
 	//You shouldn't do that in an actual game because you are losing last coordinates of mouse this way. It is for making it simple for learning.
 	GLfloat getXChange();
 	GLfloat getYChange();
+	
+	void SetViewPort(GLint width, GLint height);
 
 	void SwapBuffers() { glfwSwapBuffers(mainWindow); }
 

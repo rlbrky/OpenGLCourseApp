@@ -5,6 +5,7 @@ in vec4 vColour;
 in vec2 TexCoord;
 flat in vec3 Normal; //Can add flat here as well to make it work. Don't forget vertex
 in vec3 FragPos;
+in vec4 DirectionalLightSpacePos;
 
 out vec4 colour;
 
@@ -55,11 +56,48 @@ uniform PointLight pointLights[MAX_POINT_LIGHTS];
 uniform SpotLight spotLights[MAX_SPOT_LIGHTS];
 
 uniform sampler2D theTexture;
+uniform sampler2D directionalShadowMap;
+
 uniform Material material;
 
 uniform vec3 eyePosition;
 
-vec4 CalcLightByDirection(Light light, vec3 direction)
+float CalcDirectionalShadowFactor(DirectionalLight light)
+{
+	vec3 projCoords = DirectionalLightSpacePos.xyz / DirectionalLightSpacePos.w;
+	projCoords = (projCoords * 0.5) + 0.5; //-1 is matched to 0, and 1 is matched to 1. This way every normalized value will have some value in 0-1 range.
+
+	//float closestDepth = texture(directionalShadowMap, projCoords.xy).r; //Where the fragment that we are working with is in space on that directional shadow map relative to the light.
+	float currentDepth = projCoords.z;
+
+	vec3 normal = normalize(Normal);
+	vec3 lightDir = normalize(light.direction);
+
+	float bias = max(0.05 * (1 - dot(normal, lightDir)), 0.005);
+
+	float shadow = 0.0;
+	
+	vec2 texelSize = 1.0 / textureSize(directionalShadowMap, 0); //One unite of texture size.
+	for(int x = -1; x <= 1; ++x)
+	{
+		for(int y = -1; y <= 1; ++y)
+		{
+			float pcfDepth = texture(directionalShadowMap, projCoords.xy + vec2(x,y) * texelSize).r;
+			shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0; //If current depth is further away from the closest depth we will apply full shadow, otherwise no shadow.
+		}
+	}
+
+	shadow /= 9; //Divide by the amount of pixels you sample.
+
+	if(projCoords.z > 1.0)
+	{
+		shadow = 0.0;
+	}
+
+	return shadow;
+}
+
+vec4 CalcLightByDirection(Light light, vec3 direction, float shadowFactor)
 {
 	vec4 ambientColour = vec4(light.colour, 1.0f) * light.ambientIntensity;
 	
@@ -90,12 +128,13 @@ vec4 CalcLightByDirection(Light light, vec3 direction)
 		}
 	}
 
-	return (ambientColour + diffuseColour + specularColour);
+	return (ambientColour + (1.0 - shadowFactor) * (diffuseColour + specularColour));
 }
 
 vec4 CalcDirectionalLight()
 {
-	return CalcLightByDirection(directionalLight.base, directionalLight.direction);
+	float shadowFactor = CalcDirectionalShadowFactor(directionalLight);
+	return CalcLightByDirection(directionalLight.base, directionalLight.direction, shadowFactor);
 }
 
 vec4 CalcPointLight(PointLight pLight) //This function is to calculate only 1 point light so that we can use it in our spot light as base.
@@ -105,7 +144,7 @@ vec4 CalcPointLight(PointLight pLight) //This function is to calculate only 1 po
 	direction = normalize(direction);
 
 	//After we calculate the direction above we will use it to call our function which we wrote. It will almost treat this as a directional light now.
-	vec4 colour = CalcLightByDirection(pLight.base, direction);
+	vec4 colour = CalcLightByDirection(pLight.base, direction, 0.0f);
 	float attenuation = pLight.exponent * distance * distance + 
 						pLight.linear * distance + 
 						pLight.constant;

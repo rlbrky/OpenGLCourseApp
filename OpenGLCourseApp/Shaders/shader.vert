@@ -9,6 +9,7 @@ out vec4 vColour;
 out vec2 TexCoord;
 flat out vec3 Normal;
 out vec3 FragPos;
+out vec4 DirectionalLightSpacePos;
 
 //The flat keyword should be added before out vec3 Normal
 //If we use "flat" keyword it means that instead of interpolating the normal it will keep it consistant everywhere.
@@ -16,10 +17,13 @@ out vec3 FragPos;
 uniform mat4 model;
 uniform mat4 projection;
 uniform mat4 view;
+uniform mat4 directionalLightTransform;
 
 void main()												
 {														
 	gl_Position = projection * view * model * vec4(pos, 1.0f);	
+	DirectionalLightSpacePos = directionalLightTransform * model * vec4(pos, 1.0); //The information for where the object is relative to the light.
+
 	vColour = vec4(clamp(pos, 0.0f, 1.0f), 1.0f);
 	
 	TexCoord = tex;

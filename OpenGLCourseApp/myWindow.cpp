@@ -133,6 +133,11 @@ void myWindow::handleMouse(GLFWwindow* window, double xPos, double yPos) {
 	theWindow->lastY = yPos;
 }
 
+void myWindow::SetViewPort(GLint width, GLint height)
+{
+	glViewport(0, 0, width, height);
+}
+
 myWindow::~myWindow() {
 	glfwDestroyWindow(mainWindow);
 	glfwTerminate();

@@ -7,6 +7,9 @@
 
 #include<GL/glew.h>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include "CommonValues.h"
 
 #include "DirectionalLight.h"
@@ -20,7 +23,9 @@ private:
 	int spotLightCount;
 
 	GLuint shaderID, uniformProjection, uniformModel, uniformView, uniformEyePosition,
-		uniformSpecularIntensity, uniformShininess;
+		uniformSpecularIntensity, uniformShininess,
+		uniformTexture,
+		uniformDirectionalLightTransform, uniformDirectionalShadowMap;
 
 	//We are creating a struct because every single light needs the values in this struct so instead of making an array of uniforms above
 	//we just make a struct which will solve the issue. **Also we will need separate ID's for each of these so this saves a lot of work.
@@ -85,6 +90,9 @@ public:
 	void SetDirectionalLight(DirectionalLight* dLight);
 	void SetPointLights(PointLight* pLight, unsigned int lightCount);
 	void SetSpotLights(SpotLight* sLight, unsigned int lightCount);
+	void SetTexture(GLuint textureUnit);
+	void SetDirectionalShadowMap(GLuint textureUnit);
+	void SetDirectionalLightTransform(glm::mat4* lTransform);
 
 	void UseShader();
 	void ClearShader();
